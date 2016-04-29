@@ -1,42 +1,60 @@
 #include "ofApp.h"
 
-#define NUM_NODES 100
-#define DISTANCE 10.0
+#define DISTANCE 3.0
 #define FPS 60
-
-ofNode nodes[NUM_NODES];
-ofNode children[NUM_NODES];
-ofPolyline lines[NUM_NODES];
-ofSpherePrimitive spheres[NUM_NODES];
+#define RADIUS 100
+#define TRAJECTORY_POINTS 15
 
 //--------------------------------------------------------------
 void ofApp::setup(){
     ofSetFrameRate(FPS);
 
     startTime = ofGetElapsedTimef();
+    init(true);
+}
 
-    float x = 0.0, y = 0.0, z = 0.0;
-    ofVec3f forward(1.0, 0, 0);
-    for (int i = 0; i < NUM_NODES; i++) {
+void ofApp::initDirections() {
+    printf("init directions\n");
+    for (int l = 0; l < NUM_LINES; l++) {
+        forwards[l] = ofVec3f(ofRandom(-1.0, 1.0), ofRandom(-1.0, 1.0), ofRandom(-1.0, 1.0)).normalize();
+    }
+}
+void ofApp::initLine(int l, bool doCalcSatellitesPosition) {
+    if (doCalcSatellitesPosition) {
+        startPoints[l] = ofVec3f(ofRandom(-300.0, 300.0), ofRandom(-100.0, 100.0), ofRandom(-100.0, 100.0));
+    }
+    
+    for (int n = 0; n < NUM_NODES; n++) {
+        int i = NUM_NODES * l + n;
+        
         float theta = ofRandom(PI);
         float phi = ofRandom(TWO_PI);
-
+        
         float px = sin(theta) * cos(phi);
         float py = sin(theta) * sin(phi);
         float pz = cos(theta);
-        x += px;
-        y += py;
-        z += pz;
+        //        px = ABS(px);
+        //            py = ABS(py);
+        //        pz = ABS(pz);
 
-        nodes[i].setPosition(x, y, z);
-        children[i].setPosition(40, 0, 0);
+        if (doCalcSatellitesPosition) {
+            children[i].setPosition(ofRandom(RADIUS), 0, 0);
+        }
         children[i].setParent(nodes[i]);
-        
         ofVec3f dir(px, py, pz);
-        ofQuaternion q;
-        q.makeRotate(forward, dir);
-        
-        quaternions.push_back(q);
+        quaternions[i].makeRotate(forwards[l], dir);
+    }
+}
+
+void ofApp::init(bool doCalcSatellitesPosition) {
+    printf("init\n");
+
+    if (doCalcSatellitesPosition) {
+        initDirections();
+    }
+
+    for (int l = 0; l < NUM_LINES; l++) {
+        initLine(l, doCalcSatellitesPosition);
     }
 }
 
@@ -47,46 +65,52 @@ void ofApp::update(){
 
     uint64_t num = ofGetFrameNum();
     float dt = (float)num / FPS;
-    
-    line.clear();
 
-    ofVec3f forward = DISTANCE * ofVec3f(1, 1, 1).normalize();
-//    forward.normalize();
     ofQuaternion identity(0, ofVec3f(1, 0, 0));
-    
-    ofQuaternion prevQuaternion(0, ofVec3f(0, 0, 1));
-    float x = -200.0, y = -200.0, z = 0.0;
-    
-    ofQuaternion q(0, ofVec3f(1, 0, 0));
-    for (int i = 0; i<NUM_NODES; i++) {
-        float t = cos(dt * 0.5) / 2.0 + 0.5;
-        ofQuaternion q;
-        q.slerp(t, identity, quaternions[i]);
-        
-        
-        ofVec3f v = q * forward;
-        float px = v[0];
-        float py = v[1];
-        float pz = v[2];
-        x += px;
-        y += py;
-        z += pz;
-        
-        nodes[i].setPosition(x, y, z);
-        nodes[i].pan(3.0 + i / 30.0);
-        line.addVertex(nodes[i].getGlobalPosition());
-        if (line.size() > 1050){
-            line.getVertices().erase(line.getVertices().begin());
-        }
-        lines[i].addVertex(children[i].getGlobalPosition());
-        if (lines[i].size() > 1050){
-            lines[i].getVertices().erase(lines[i].getVertices().begin());
+
+    for (int l = 0; l < NUM_LINES; l++) {
+        float t = cos(dt * 0.5 + l) / 2.0 + 0.5;
+        if (t < 0.00001) {
+            initLine(l);
         }
 
-        spheres[i].setRadius(4.0);
-        spheres[i].setResolution(8);
+        ofVec3f forward = DISTANCE * forwards[l];
+        ofVec3f start = startPoints[l];
+        float x = start[0];
+        float y = start[1];
+        float z = start[2];
 
-        forward = v;
+        line[l].clear();
+        for (int n = 0; n < NUM_NODES; n++) {
+            int i = NUM_NODES * l + n;
+
+            ofQuaternion q;
+            q.slerp(t, identity, quaternions[i]);
+            
+            ofVec3f v = q * forward;
+            float px = v[0];
+            float py = v[1];
+            float pz = v[2];
+            x += px;
+            y += py;
+            z += pz;
+            
+            nodes[i].setPosition(x, y, z);
+            nodes[i].pan(1.0 + i / 30.0);
+//            nodes[i].tilt(ofRandom(3.0));
+
+            line[l].addVertex(nodes[i].getGlobalPosition());
+
+            lines[i].addVertex(children[i].getGlobalPosition());
+            if (lines[i].size() > TRAJECTORY_POINTS){
+                lines[i].getVertices().erase(lines[i].getVertices().begin());
+            }
+
+            spheres[i].setRadius(4.0);
+            spheres[i].setResolution(8);
+
+            forward = v;
+        }
     }
     
 //    myImage.grabScreen(0, 0, ofGetWidth(), ofGetHeight());
@@ -104,21 +128,26 @@ void ofApp::draw(){
     ofBackgroundGradient(ofColor::gray, ofColor::black);
     ofEnableDepthTest();
     cam.begin();
-    ofSetLineWidth(1.0);
-    for (int i = 0; i<NUM_NODES; i++) {
-        float t = cos(dt * 0.6 + i * TWO_PI / NUM_NODES) / 2.0 + 0.5;
-        int color3 = (int)(t * 255);
+    for (int l = 0; l < NUM_LINES; l++) {
+        for (int n = 0; n < NUM_NODES; n++) {
+            int i = NUM_NODES * l + n;
 
-        ofSetColor(color3, color3, color3, 180);
-        ofVec3f v = children[i].getGlobalPosition();
-        spheres[i].setPosition(v);
-        spheres[i].draw();
-        lines[i].draw();
+            float t = cos(dt * 0.6 + i * TWO_PI / NUM_NODES) / 2.0 + 0.5;
+            int color3 = (int)(t * 255);
+
+            ofSetColor(color3, color3, color3, 100);
+            ofVec3f v = children[i].getGlobalPosition();
+            spheres[i].setPosition(v);
+            spheres[i].draw();
+
+            ofSetLineWidth(1.0);
+            lines[i].draw();
+        }
+        
+        ofSetColor(ofColor::white);
+        ofSetLineWidth(3.0);
+        line[l].draw();
     }
-
-    ofSetColor(ofColor::white);
-    ofSetLineWidth(3.0);
-    line.draw();
     cam.end();
 }
 
