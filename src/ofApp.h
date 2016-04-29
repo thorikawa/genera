@@ -2,8 +2,8 @@
 
 #include "ofMain.h"
 
-#define NUM_NODES 100
-#define NUM_LINES 6
+#define NUM_NODES 120
+#define NUM_LINES 1
 
 class ofApp : public ofBaseApp{
 
@@ -27,6 +27,7 @@ class ofApp : public ofBaseApp{
 		void dragEvent(ofDragInfo dragInfo);
 		void gotMessage(ofMessage msg);
     
+    ofNode camCenter;
     ofVec3f startPoints[NUM_LINES];
     ofVec3f forwards[NUM_LINES];
     ofPolyline line[NUM_LINES];
@@ -37,5 +38,6 @@ class ofApp : public ofBaseApp{
     ofSpherePrimitive spheres[NUM_LINES * NUM_NODES];
 
     float startTime;
-        ofEasyCam cam;
+        ofCamera cam;
+//    ofEasyCam cam;
 };

@@ -1,9 +1,10 @@
 #include "ofApp.h"
 
-#define DISTANCE 3.0
+#define DISTANCE 10.0
 #define FPS 60
-#define RADIUS 100
-#define TRAJECTORY_POINTS 15
+#define RADIUS 0
+#define TRAJECTORY_POINTS 1000
+#define SAVE_IMAGES 1
 
 //--------------------------------------------------------------
 void ofApp::setup(){
@@ -11,6 +12,13 @@ void ofApp::setup(){
 
     startTime = ofGetElapsedTimef();
     init(true);
+ 
+    camCenter.setPosition(0, 100, 0);
+//    cam.setParent(camCenter);
+//    cam.setParent(nodes[NUM_NODES-1]);
+    cam.setPosition(800, 800, 800);
+//    cam.setPosition(0, 0, 0);
+    cam.lookAt(ofVec3f(0, 0, 0));
 }
 
 void ofApp::initDirections() {
@@ -20,6 +28,7 @@ void ofApp::initDirections() {
     }
 }
 void ofApp::initLine(int l, bool doCalcSatellitesPosition) {
+    printf("init line %d\n", l);
     if (doCalcSatellitesPosition) {
         startPoints[l] = ofVec3f(ofRandom(-300.0, 300.0), ofRandom(-100.0, 100.0), ofRandom(-100.0, 100.0));
     }
@@ -96,7 +105,11 @@ void ofApp::update(){
             z += pz;
             
             nodes[i].setPosition(x, y, z);
-            nodes[i].pan(1.0 + i / 30.0);
+            nodes[i].setOrientation(q);
+            
+            float degree = 1.0 + i / 30.0;
+//            nodes[i].roll(degree);
+//            nodes[i].tilt(degree);
 //            nodes[i].tilt(ofRandom(3.0));
 
             line[l].addVertex(nodes[i].getGlobalPosition());
@@ -106,18 +119,26 @@ void ofApp::update(){
                 lines[i].getVertices().erase(lines[i].getVertices().begin());
             }
 
-            spheres[i].setRadius(4.0);
+            spheres[i].setRadius(1.0);
             spheres[i].setResolution(8);
 
             forward = v;
         }
     }
     
-//    myImage.grabScreen(0, 0, ofGetWidth(), ofGetHeight());
-//    char filename[256];
-//    sprintf(filename, "i%05llu.jpg", num);
-//    myImage.saveImage(filename, OF_IMAGE_QUALITY_HIGH);
+    float t = cos(dt * 0.5) / 2.0 + 0.5;
+    camCenter.pan(1);
+//    camCenter.move(0, -1.0, 0);
+    cam.lookAt(ofVec3f(0, 0, 0), ofVec3f(0, 1, 0));
+//    ofVec3f v = cam.getGlobalPosition();
+//    ofLogNotice() << v;
 
+#if SAVE_IMAGES
+    myImage.grabScreen(0, 0, ofGetWidth(), ofGetHeight());
+    char filename[256];
+    sprintf(filename, "i%05llu.jpg", num);
+    myImage.saveImage(filename, OF_IMAGE_QUALITY_BEST);
+#endif
 }
 
 //--------------------------------------------------------------
@@ -128,25 +149,30 @@ void ofApp::draw(){
     ofBackgroundGradient(ofColor::gray, ofColor::black);
     ofEnableDepthTest();
     cam.begin();
+//    cam.lookAt(ofVec3f(0, 0, 0));
     for (int l = 0; l < NUM_LINES; l++) {
         for (int n = 0; n < NUM_NODES; n++) {
             int i = NUM_NODES * l + n;
 
             float t = cos(dt * 0.6 + i * TWO_PI / NUM_NODES) / 2.0 + 0.5;
-            int color3 = (int)(t * 255);
+            int color = (int)(t * 255);
 
-            ofSetColor(color3, color3, color3, 100);
+            // ofSetColor(color3, color3, color3, 100);
+            ofSetColor(ofColor::fromHsb(color, 255, 255, 100));
+
             ofVec3f v = children[i].getGlobalPosition();
             spheres[i].setPosition(v);
-            spheres[i].draw();
+//            spheres[i].draw();
+            
+//            nodes[i].draw();
 
-            ofSetLineWidth(1.0);
+            ofSetLineWidth(30.0);
             lines[i].draw();
         }
         
         ofSetColor(ofColor::white);
-        ofSetLineWidth(3.0);
-        line[l].draw();
+//        ofSetLineWidth(3.0);
+//        line[l].draw();
     }
     cam.end();
 }
