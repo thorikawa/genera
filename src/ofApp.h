@@ -21,6 +21,7 @@ class ofApp : public ofBaseApp{
 		void dragEvent(ofDragInfo dragInfo);
 		void gotMessage(ofMessage msg);
 		
+    ofPolyline line;
     vector<ofQuaternion> quaternions;
     float startTime;
         ofEasyCam cam;
