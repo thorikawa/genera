@@ -1,10 +1,10 @@
 #include "ofApp.h"
 
-#define DISTANCE 10.0
+#define DISTANCE 3.0
 #define FPS 60
 #define RADIUS 0
 #define TRAJECTORY_POINTS 1000
-#define SAVE_IMAGES 1
+#define SAVE_IMAGES 0
 
 //--------------------------------------------------------------
 void ofApp::setup(){
@@ -14,11 +14,17 @@ void ofApp::setup(){
     init(true);
  
     camCenter.setPosition(0, 100, 0);
-//    cam.setParent(camCenter);
-//    cam.setParent(nodes[NUM_NODES-1]);
-    cam.setPosition(800, 800, 800);
-//    cam.setPosition(0, 0, 0);
+    cam.setParent(nodes[NUM_NODES-1]);
+    cam.setPosition(300, 100, 300);
     cam.lookAt(ofVec3f(0, 0, 0));
+    light.setup();
+    light.enable();
+    light.setSpotlight();
+    light.setPosition(100, 700, 100);
+    light.lookAt(ofVec3f(0, 0, 0));
+    light.setAmbientColor(ofColor::white);
+    light.setDiffuseColor(ofColor::white);
+    light.setSpecularColor(ofColor::red);
 }
 
 void ofApp::initDirections() {
@@ -162,18 +168,19 @@ void ofApp::draw(){
 
             ofVec3f v = children[i].getGlobalPosition();
             spheres[i].setPosition(v);
-//            spheres[i].draw();
+            spheres[i].draw();
             
 //            nodes[i].draw();
 
-            ofSetLineWidth(30.0);
+            ofSetLineWidth(3.0);
             lines[i].draw();
         }
         
         ofSetColor(ofColor::white);
-//        ofSetLineWidth(3.0);
-//        line[l].draw();
+        ofSetLineWidth(3.0);
+        line[l].draw();
     }
+//    light.draw();
     cam.end();
 }
 

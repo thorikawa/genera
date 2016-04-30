@@ -3,7 +3,7 @@
 #include "ofMain.h"
 
 #define NUM_NODES 120
-#define NUM_LINES 1
+#define NUM_LINES 8
 
 class ofApp : public ofBaseApp{
 
@@ -36,6 +36,7 @@ class ofApp : public ofBaseApp{
     ofNode children[NUM_LINES * NUM_NODES];
     ofPolyline lines[NUM_LINES * NUM_NODES];
     ofSpherePrimitive spheres[NUM_LINES * NUM_NODES];
+    ofLight light;
 
     float startTime;
         ofCamera cam;
